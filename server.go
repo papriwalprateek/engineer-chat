@@ -28,7 +28,7 @@ func main() {
 		}
 
 		// keep track of the client details
-		client := hub.Client{Connection: conn, Room: "lobby", Settings: settings}
+		client := hub.Client{Connection: conn, Room: &hub.Room{Name: "lobby"}}
 		client.Register()
 
 		// allow non-blocking client request handling
@@ -36,7 +36,7 @@ func main() {
 		go waitForInput(channel, &client)
 		go handleInput(channel, &client)
 
-		client.SendMessage("ready", settings.Port, true)
+		client.SendMessage("login", "Welcome to the Engineer Chat Server! \nLogin Name?", true)
 	}
 
 }
@@ -44,7 +44,6 @@ func main() {
 // wait for client input (buffered by newlines) and signal the channel
 func waitForInput(out chan string, client *hub.Client) {
 	defer close(out)
-
 	reader := bufio.NewReader(client.Connection)
 	for {
 		line, err := reader.ReadBytes('\n')
@@ -66,41 +65,52 @@ func handleInput(in <-chan string, client *hub.Client) {
 		message := <-in
 		if message != "" {
 			message = strings.TrimSpace(message)
-			action, body := getAction(message)
+			var action string
+			var body string
+			if message[0] == '/' {
+				action, body = getAction(message)
+			} else {
+				body = message
+				if client.Username == "" {
+					action = "user"
+				} else {
+					action = "message"
+				}
+			}
 
 			if action != "" {
 				switch action {
 
-				// the user has submitted a message
+				// command to post message on chat server
 				case "message":
 					client.SendMessage("message", body, false)
 
-				// the user has provided their username (initialization handshake)
+				// command to login into server by providing username
 				case "user":
 					client.Username = body
 					client.SendMessage("connect", "", false)
 
-				// the user is disconnecting
-				case "disconnect":
+				// command to logout of the chat server
+				case "quit":
 					client.Close(false)
 
-				// the user is disconnecting
+				// command to add the given username to client's ignoring list
 				case "ignore":
 					client.Ignore(body)
 					client.SendMessage("ignoring", body, false)
 
-				// the user is entering a room
+				// command to enter the given chat room
 				case "enter":
 					if body != "" {
-						client.Room = body
+						client.Room.Name = body
 						client.SendMessage("enter", body, false)
 					}
 
-				// the user is leaving the current room
+				// command to leave the given chat room
 				case "leave":
-					if client.Room != "lobby" {
-						client.SendMessage("leave", client.Room, false)
-						client.Room = "lobby"
+					if client.Room.Name != "lobby" {
+						client.SendMessage("leave", client.Room.Name, false)
+						client.Room.Name = "lobby"
 					}
 
 				default:
@@ -111,7 +121,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 	}
 }
 
-// parse out message contents (/{action} {message}) and return individual values
+// parse out message contents (/{action} {message})
 func getAction(message string) (string, string) {
 	actionRegex, _ := regexp.Compile(`^\/([^\s]*)\s*(.*)$`)
 	res := actionRegex.FindAllStringSubmatch(message, -1)

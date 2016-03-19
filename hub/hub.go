@@ -13,19 +13,19 @@ type Settings struct {
 
 // Client stores the client details.
 type Client struct {
-	// the client's connection
 	Connection net.Conn
-	// the client's username
-	Username string
-	// the current room or "global"
-	Room string
-	// list of usernames we are ignoring
-	ignoring []string
-	// the config properties
-	Settings *Settings
+	Username   string
+	Room       *Room
+	ignoring   []string
 }
 
-// static client list
+// Room stores the room details.
+type Room struct {
+	Name    string
+	Clients []string
+}
+
+// in-memory storage
 var clients []*Client
 
 // Close the client connection and clenup
@@ -61,29 +61,25 @@ func (client *Client) IsIgnoring(username string) bool {
 
 // SendMessage sends message to all clients
 func (client *Client) SendMessage(messageType string, message string, thisClientOnly bool) {
+	var payload string
 
 	if thisClientOnly {
-		// this message is only for the provided client
-		message = fmt.Sprintf("/%v", messageType)
-		fmt.Fprintln(client.Connection, message)
-
+		if messageType == "login" {
+			payload = message
+		} else if messageType == "unrecognized" {
+			payload = fmt.Sprintf("**%v** unrecognized command", message)
+		}
+		fmt.Fprintln(client.Connection, payload)
 	} else if client.Username != "" {
-		// construct the payload to be sent to clients
-		payload := fmt.Sprintf("/%v [%v] %v", messageType, client.Username, message)
+		payload = fmt.Sprintf("**%v** [%v] %v", messageType, client.Username, message)
 
-		for _, _client := range clients {
+		for _, c := range clients {
 			// write the message to the client
-			if (thisClientOnly && _client.Username == client.Username) ||
-				(!thisClientOnly && _client.Username != "") {
-
-				// you should only see a message if you are in the same room
-				if messageType == "message" && client.Room != _client.Room || _client.IsIgnoring(client.Username) {
+			if (thisClientOnly && c.Username == client.Username) || (!thisClientOnly && c.Username != "") {
+				if messageType == "message" && client.Room.Name != c.Room.Name || c.IsIgnoring(client.Username) {
 					continue
 				}
-
-				// you won't hear any activity if you are anonymous unless thisClientOnly
-				// when current client will *only* be messaged
-				fmt.Fprintln(_client.Connection, payload)
+				fmt.Fprintln(c.Connection, payload)
 			}
 		}
 	}
