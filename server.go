@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"./hub"
+	"github.com/papriwalprateek/engineer-chat/hub"
 )
 
 func main() {
