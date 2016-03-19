@@ -6,7 +6,6 @@ spec:
   containers:
     - name: engineer-chat
       image: papriwalprateek/engineer-chat
-      imagePullPolicy: Always
       ports:
         - containerPort: 5555
           hostPort: 6060
