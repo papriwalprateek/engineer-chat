@@ -11,6 +11,9 @@ import (
 	"github.com/papriwalprateek/engineer-chat/hub"
 )
 
+// hubStore is an in-memory storage for the running server.
+var hubStore map[string]*hub.Room
+
 func main() {
 	settings := &hub.Settings{Host: "localhost", Port: "5555"}
 	ln, err := net.Listen("tcp", ":"+settings.Port)
@@ -20,6 +23,9 @@ func main() {
 	}
 	fmt.Printf("Chat server started on port %v...\n", settings.Port)
 
+	// initialize hubStore
+	hubStore = make(map[string]*hub.Room)
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -28,7 +34,7 @@ func main() {
 		}
 
 		// keep track of the client details
-		client := hub.Client{Connection: conn, Room: &hub.Room{Name: "lobby"}}
+		client := hub.Client{Connection: conn, Room: "lobby"}
 		client.Register()
 
 		// allow non-blocking client request handling
@@ -92,6 +98,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 
 				// command to logout of the chat server
 				case "quit":
+					hubStore[client.Room].RemoveClient(client)
 					client.Close(false)
 
 				// command to add the given username to client's ignoring list
@@ -102,16 +109,32 @@ func handleInput(in <-chan string, client *hub.Client) {
 				// command to enter the given chat room
 				case "enter":
 					if body != "" {
-						client.Room.Name = body
+						if client.Room != "lobby" {
+							hubStore[client.Room].RemoveClient(client)
+						}
+						client.Room = body
+						if _, ok := hubStore[client.Room]; !ok {
+							hubStore[client.Room] = &hub.Room{Clients: []string{client.Username}}
+						} else {
+							hubStore[client.Room].Clients = append(hubStore[client.Room].Clients, client.Username)
+						}
 						client.SendMessage("enter", body, false)
 					}
 
 				// command to leave the given chat room
 				case "leave":
-					if client.Room.Name != "lobby" {
-						client.SendMessage("leave", client.Room.Name, false)
-						client.Room.Name = "lobby"
+					if client.Room != "lobby" {
+						client.SendMessage("leave", client.Room, false)
+						hubStore[client.Room].RemoveClient(client)
+						client.Room = "lobby"
 					}
+
+				case "rooms":
+					body = "Available Rooms:"
+					for r, room := range hubStore {
+						body += fmt.Sprintf("\n%v(%v)", r, len(room.Clients))
+					}
+					client.SendMessage("rooms", body, true)
 
 				default:
 					client.SendMessage("unrecognized", action, true)

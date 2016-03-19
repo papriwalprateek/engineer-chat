@@ -11,18 +11,17 @@ type Settings struct {
 	Port string
 }
 
+// Room stores the room details.
+type Room struct {
+	Clients []string
+}
+
 // Client stores the client details.
 type Client struct {
 	Connection net.Conn
 	Username   string
-	Room       *Room
+	Room       string
 	ignoring   []string
-}
-
-// Room stores the room details.
-type Room struct {
-	Name    string
-	Clients []string
 }
 
 // in-memory storage
@@ -64,10 +63,10 @@ func (client *Client) SendMessage(messageType string, message string, thisClient
 	var payload string
 
 	if thisClientOnly {
-		if messageType == "login" {
-			payload = message
-		} else if messageType == "unrecognized" {
+		if messageType == "unrecognized" {
 			payload = fmt.Sprintf("**%v** unrecognized command", message)
+		} else {
+			payload = message
 		}
 		fmt.Fprintln(client.Connection, payload)
 	} else if client.Username != "" {
@@ -76,7 +75,7 @@ func (client *Client) SendMessage(messageType string, message string, thisClient
 		for _, c := range clients {
 			// write the message to the client
 			if (thisClientOnly && c.Username == client.Username) || (!thisClientOnly && c.Username != "") {
-				if messageType == "message" && client.Room.Name != c.Room.Name || c.IsIgnoring(client.Username) {
+				if messageType == "message" && client.Room != c.Room || c.IsIgnoring(client.Username) {
 					continue
 				}
 				fmt.Fprintln(c.Connection, payload)
@@ -104,4 +103,16 @@ func removeEntry(client *Client, arr []*Client) []*Client {
 	}
 
 	return rtn
+}
+
+// RemoveClient removes client from the room.
+func (room *Room) RemoveClient(client *Client) {
+	clientsInRoom := room.Clients
+	for i, c := range clientsInRoom {
+		if c == client.Username {
+			clientsInRoom = append(clientsInRoom[:i], clientsInRoom[i+1:]...)
+			break
+		}
+	}
+	room.Clients = clientsInRoom
 }
