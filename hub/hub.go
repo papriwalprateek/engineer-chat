@@ -70,7 +70,11 @@ func (client *Client) SendMessage(messageType string, message string, thisClient
 		}
 		fmt.Fprintln(client.Connection, payload)
 	} else if client.Username != "" {
-		payload = fmt.Sprintf("**%v** [%v] %v", messageType, client.Username, message)
+		if messageType == "message" {
+			payload = fmt.Sprintf("[%v] %v", client.Username, message)
+		} else {
+			payload = fmt.Sprintf("**%v** [%v] %v", messageType, client.Username, message)
+		}
 
 		for _, c := range clients {
 			// write the message to the client
@@ -80,6 +84,16 @@ func (client *Client) SendMessage(messageType string, message string, thisClient
 				}
 				fmt.Fprintln(c.Connection, payload)
 			}
+		}
+	}
+}
+
+// SendPM sends a private message to the receiver client.
+func (client *Client) SendPM(rec string, msg string) {
+	for _, cl := range clients {
+		if cl.Username == rec {
+			fmt.Fprintln(cl.Connection, msg)
+			break
 		}
 	}
 }

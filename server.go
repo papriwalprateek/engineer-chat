@@ -74,11 +74,11 @@ func handleInput(in <-chan string, client *hub.Client) {
 			var action string
 			var body string
 			if message[0] == '/' {
-				action, body = getAction(message)
+				action, body = parse(message)
 			} else {
 				body = message
 				if client.Username == "" {
-					action = "user"
+					action = "register"
 				} else {
 					action = "message"
 				}
@@ -91,8 +91,8 @@ func handleInput(in <-chan string, client *hub.Client) {
 				case "message":
 					client.SendMessage("message", body, false)
 
-				// command to login into server by providing username
-				case "user":
+					// command to login into server by providing username
+				case "register":
 					client.Username = body
 					client.SendMessage("connect", "", false)
 
@@ -136,6 +136,11 @@ func handleInput(in <-chan string, client *hub.Client) {
 					}
 					client.SendMessage("rooms", body, true)
 
+				case "pm":
+					rec, msg := parse("/" + body)
+					fmt.Println(rec, msg)
+					payload := fmt.Sprintf("**pm** [%v] %v", client.Username, msg)
+					client.SendPM(rec, payload)
 				default:
 					client.SendMessage("unrecognized", action, true)
 				}
@@ -145,7 +150,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 }
 
 // parse out message contents (/{action} {message})
-func getAction(message string) (string, string) {
+func parse(message string) (string, string) {
 	actionRegex, _ := regexp.Compile(`^\/([^\s]*)\s*(.*)$`)
 	res := actionRegex.FindAllStringSubmatch(message, -1)
 	if len(res) == 1 {
