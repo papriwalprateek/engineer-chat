@@ -78,7 +78,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 			} else {
 				body = message
 				if client.Username == "" {
-					action = "register"
+					action = "login"
 				} else {
 					action = "message"
 				}
@@ -92,9 +92,13 @@ func handleInput(in <-chan string, client *hub.Client) {
 					client.SendMessage("message", body, false)
 
 					// command to login into server by providing username
-				case "register":
-					client.Username = body
-					client.SendMessage("connect", "", false)
+				case "login":
+					if client.Exists(body) {
+						client.SendMessage("warn", "**username already taken**\nLogin name?", true)
+					} else {
+						client.Username = body
+						client.SendMessage("connect", "", false)
+					}
 
 				// command to logout of the chat server
 				case "quit":

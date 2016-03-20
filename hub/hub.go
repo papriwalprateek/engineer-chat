@@ -98,6 +98,16 @@ func (client *Client) SendPM(rec string, msg string) {
 	}
 }
 
+// Exists check whether the username is already occupied by some client.
+func (client *Client) Exists(c string) bool {
+	for _, cl := range clients {
+		if c == cl.Username {
+			return true
+		}
+	}
+	return false
+}
+
 // remove client entry from stored clients
 func removeEntry(client *Client, arr []*Client) []*Client {
 	rtn := arr
