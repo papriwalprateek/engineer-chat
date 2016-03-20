@@ -25,8 +25,8 @@ func init() {
 
 	server.On("connection", func(so socketio.Socket) {
 		log.Println("on connection")
-		so.Join("lobby")
-		cl := &client{name: "Anon", room: "lobby"}
+		so.Join(lobby)
+		cl := &client{name: "Anon", room: lobby}
 		so.On(chatChannel, func(msg string) {
 			if msg != "" {
 				msg = strings.TrimSpace(msg)
@@ -43,29 +43,29 @@ func init() {
 					so.Emit(chatChannel, "please register using /register <username>")
 				} else {
 					switch action {
-					case "register":
+					case cmdRegister:
 						cl.name = body
 						clients = append(clients, cl)
 						payload = fmt.Sprintf("You are now registered as %v", cl.name)
 						so.Emit(chatChannel, payload)
-					case "message":
+					case cmdMessage:
 						so.Emit(chatChannel, msg)
 						payload = fmt.Sprintf("[%v] %v", cl.name, msg)
 						so.BroadcastTo(cl.room, chatChannel, payload)
-					case "enter":
+					case cmdEnter:
 						so.Leave(cl.room)
 						so.Join(body)
 						cl.room = body
 						payload = fmt.Sprintf("**%v** joins **%v** room", cl.name, cl.room)
 						so.Emit(chatChannel, payload)
-						so.BroadcastTo("lobby", chatChannel, payload)
-					case "leave":
+						so.BroadcastTo(lobby, chatChannel, payload)
+					case cmdLeave:
 						so.Leave(cl.room)
-						so.Join("lobby")
+						so.Join(lobby)
 						payload = fmt.Sprintf("**%v** leaves **%v** room", cl.name, cl.room)
 						so.Emit(chatChannel, payload)
-						so.BroadcastTo("lobby", chatChannel, payload)
-						cl.room = "lobby"
+						so.BroadcastTo(lobby, chatChannel, payload)
+						cl.room = lobby
 					default:
 						payload = fmt.Sprintf("**%v** command not supported", action)
 						so.Emit(chatChannel, payload)
