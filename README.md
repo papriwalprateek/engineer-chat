@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/papriwalprateek/engineer-chat?status.png)](https://godoc.org/github.com/papriwalprateek/engineer-chat)
+
 # engineer-chat
 
 A simple chat server where clients(or rather engineers!) can easily chat through their terminal.
