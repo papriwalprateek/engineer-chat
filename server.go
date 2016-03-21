@@ -183,10 +183,10 @@ func handleInput(in <-chan string, client *hub.Client) {
 					body = "**Engineer Chat**\n" +
 						"Synopsis: /<command> <body>\n" +
 						"List of Commands:\n" +
-						"/register <username> : registers with the given username\n" +
+						"/register <username> : registers the user with the given username\n" +
 						"/quit : logout\n" +
 						"/message <message> : (or simply type your <message>) broadcast the message in the room\n" +
-						"/pm <username> <message>: messages privately to the given user" +
+						"/pm <username> <message>: messages privately to the given user\n" +
 						"/ignore <username> : ignores the user\n" +
 						"/enter <room> : enters the given room\n" +
 						"/leave : leave the room and come back in the lobby\n" +
