@@ -19,9 +19,9 @@ var clients []*Client
 // Close the client connection and cleanup
 func (client *Client) Close(doSendMessage bool) {
 	if doSendMessage {
-		// if we send the close command, the connection will terminate causing another close
-		// which will send the message
-		client.SendMessage("disconnect", "", false)
+		// On sending the close command, the connection will terminate leading to another close
+		// and hence this message will be sent.
+		client.BroadcastMsg("disconnect", "")
 	}
 	client.Connection.Close()
 	client.Delete()
@@ -47,34 +47,33 @@ func (client *Client) IsIgnoring(username string) bool {
 	return false
 }
 
-// SendMessage sends message to the clients.
-func (client *Client) SendMessage(messageType string, message string, thisClientOnly bool) {
+// BroadcastMsg broadcasts message to the clients.
+func (client *Client) BroadcastMsg(msgType string, message string) {
 	var payload string
-
-	if thisClientOnly {
-		if messageType == "unrecognized" {
-			payload = fmt.Sprintf("**%v** unrecognized command", message)
-		} else {
-			payload = message
-		}
-		fmt.Fprintln(client.Connection, payload)
-	} else if client.Username != "" {
-		if messageType == "message" {
-			payload = fmt.Sprintf("[%v] %v", client.Username, message)
-		} else {
-			payload = fmt.Sprintf("**%v** [%v] %v", messageType, client.Username, message)
-		}
-
-		for _, c := range clients {
-			// write the message to the client
-			if (thisClientOnly && c.Username == client.Username) || (!thisClientOnly && c.Username != "") {
-				if messageType == "message" && client.Room != c.Room || c.IsIgnoring(client.Username) {
-					continue
-				}
-				fmt.Fprintln(c.Connection, payload)
-			}
-		}
+	if msgType == "message" {
+		payload = fmt.Sprintf("[%v] %v", client.Username, message)
+	} else {
+		payload = fmt.Sprintf("**%v** [%v] %v", msgType, client.Username, message)
 	}
+
+	for _, c := range clients {
+		if (msgType == "message" && client.Room != c.Room) || c.IsIgnoring(client.Username) {
+			continue
+		}
+		fmt.Fprintln(c.Connection, payload)
+	}
+}
+
+// SendMessageToClientOnly sends message to this client only. This is mostly used to get
+// information/help from the chat server.
+func (client *Client) SendMessageToClientOnly(msgType string, message string) {
+	var payload string
+	if msgType == "unrecognized" {
+		payload = fmt.Sprintf("**%v** unrecognized command", message)
+	} else {
+		payload = message
+	}
+	fmt.Fprintln(client.Connection, payload)
 }
 
 // SendPM sends a private message to the receiver client.

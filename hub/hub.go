@@ -29,15 +29,15 @@ func ExecCommand(action string, body string, client *Client) {
 
 		// command to post message on chat server
 		case "message":
-			client.SendMessage("message", body, false)
+			client.BroadcastMsg("message", body)
 
 			// command to login into server by providing username
 		case "register":
-			if client.Exists(body) {
-				client.SendMessage("warn", "**username already taken**\nLogin name?", true)
+			if client.Exists(body) && client.Username != "anon" {
+				client.SendMessageToClientOnly("register", "**username already taken**\nLogin name?")
 			} else {
 				client.Username = body
-				client.SendMessage("connect", "", false)
+				client.BroadcastMsg("connect", "")
 			}
 
 		// command to logout of the chat server
@@ -50,7 +50,7 @@ func ExecCommand(action string, body string, client *Client) {
 		// command to add the given username to client's ignoring list
 		case "ignore":
 			client.Ignore(body)
-			client.SendMessage("ignoring", body, false)
+			client.BroadcastMsg("ignoring", body)
 
 		// command to enter the given chat room
 		case "enter":
@@ -64,19 +64,19 @@ func ExecCommand(action string, body string, client *Client) {
 				} else {
 					Store[client.Room].Clients = append(Store[client.Room].Clients, client.Username)
 				}
-				client.SendMessage("enter", body, false)
+				client.BroadcastMsg("enter", body)
 			} else {
-				client.SendMessage("enter", "invlid room name", true)
+				client.SendMessageToClientOnly("enter", "invlid room name")
 			}
 
 		// command to leave the given chat room
 		case "leave":
 			if client.Room != "lobby" {
-				client.SendMessage("leave", client.Room, false)
+				client.BroadcastMsg("leave", client.Room)
 				Store[client.Room].RemoveClient(client)
 				client.Room = "lobby"
 			} else {
-				client.SendMessage("leave", "already in lobby", true)
+				client.SendMessageToClientOnly("leave", "already in lobby")
 			}
 
 		// command to list the active rooms
@@ -90,9 +90,9 @@ func ExecCommand(action string, body string, client *Client) {
 				}
 			}
 			if flag {
-				client.SendMessage("rooms", payload, true)
+				client.SendMessageToClientOnly("rooms", payload)
 			} else {
-				client.SendMessage("rooms", "**no active room**", true)
+				client.SendMessageToClientOnly("rooms", "**no active room**")
 			}
 
 		// command to send private message to a user
@@ -114,16 +114,20 @@ func ExecCommand(action string, body string, client *Client) {
 						payload += fmt.Sprintf("\n%v", cl.Username)
 					}
 				}
-				client.SendMessage("users", payload, true)
+				client.SendMessageToClientOnly("users", payload)
 			} else {
 				if _, ok := Store[body]; ok {
-					payload = fmt.Sprintf("**users in [%v] room**", body)
-					for _, cl := range Store[body].Clients {
-						payload += fmt.Sprintf("\n%v", cl)
+					if len(Store[body].Clients) > 0 {
+						payload = fmt.Sprintf("**users in [%v] room**", body)
+						for _, cl := range Store[body].Clients {
+							payload += fmt.Sprintf("\n%v", cl)
+						}
+					} else {
+						payload = fmt.Sprintf("**no user in [%v] room**", body)
 					}
-					client.SendMessage("users", payload, true)
+					client.SendMessageToClientOnly("users", payload)
 				} else {
-					client.SendMessage("users", "**no such room**", true)
+					client.SendMessageToClientOnly("users", "**no such room**")
 				}
 			}
 
@@ -141,10 +145,10 @@ func ExecCommand(action string, body string, client *Client) {
 				"/leave : leave the room and come back in the lobby\n" +
 				"/rooms : lists the available rooms\n" +
 				"/users <room> : lists the users in the given room"
-			client.SendMessage("help", body, true)
+			client.SendMessageToClientOnly("help", body)
 
 		default:
-			client.SendMessage("unrecognized", action, true)
+			client.SendMessageToClientOnly("unrecognized", action)
 		}
 	}
 }

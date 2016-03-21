@@ -30,8 +30,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		// keep track of the client details
-		client := hub.Client{Connection: conn, Room: "lobby"}
+		// create new client and keep track of its details
+		client := hub.Client{Connection: conn, Room: "lobby", Username: "anon"}
 		client.Register()
 
 		// allow non-blocking client request handling
@@ -39,7 +39,7 @@ func main() {
 		go waitForInput(channel, &client)
 		go handleInput(channel, &client)
 
-		client.SendMessage("login", "Welcome to the Engineer Chat Server!\nType /help to list the commands\nLogin Name?", true)
+		client.SendMessageToClientOnly("login", "Welcome to the Engineer Chat Server!\nType /help to list the commands\nLogin Name?")
 	}
 
 }
@@ -71,7 +71,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 				action, body = util.ParseMsg(message)
 			} else {
 				body = message
-				if client.Username == "" {
+				if client.Username == "anon" {
 					action = "register"
 				} else {
 					action = "message"
