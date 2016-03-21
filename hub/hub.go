@@ -2,7 +2,8 @@ package hub
 
 import (
 	"fmt"
-	"net"
+
+	"github.com/papriwalprateek/engineer-chat/util"
 )
 
 // Settings stores the configuration settings for the server.
@@ -16,104 +17,123 @@ type Room struct {
 	Clients []string
 }
 
-// Client stores the client details.
-type Client struct {
-	Connection net.Conn
-	Username   string
-	Room       string
-	ignoring   []string
-}
+// Store is an in-memory storage for the running server.
+var Store map[string]*Room
 
-// in-memory storage
-var clients []*Client
-
-// Close the client connection and clenup
-func (client *Client) Close(doSendMessage bool) {
-	if doSendMessage {
-		// if we send the close command, the connection will terminate causing another close
-		// which will send the message
-		client.SendMessage("disconnect", "", false)
-	}
-	client.Connection.Close()
-	client.Delete()
-}
-
-// Register stores the client details.
-func (client *Client) Register() {
-	clients = append(clients, client)
-}
-
-// Ignore adds the user to the client's ignoring list.
-func (client *Client) Ignore(user string) {
-	client.ignoring = append(client.ignoring, user)
-}
-
-// IsIgnoring returns whether the given user is in the client's ignoring list.
-func (client *Client) IsIgnoring(username string) bool {
-	for _, value := range client.ignoring {
-		if value == username {
-			return true
-		}
-	}
-	return false
-}
-
-// SendMessage sends message to all clients depending on the messageType.
-func (client *Client) SendMessage(messageType string, message string, thisClientOnly bool) {
+// ExecCommand executes the command.
+func ExecCommand(action string, body string, client *Client) {
 	var payload string
 
-	if thisClientOnly {
-		if messageType == "unrecognized" {
-			payload = fmt.Sprintf("**%v** unrecognized command", message)
-		} else {
-			payload = message
-		}
-		fmt.Fprintln(client.Connection, payload)
-	} else if client.Username != "" {
-		if messageType == "message" {
-			payload = fmt.Sprintf("[%v] %v", client.Username, message)
-		} else {
-			payload = fmt.Sprintf("**%v** [%v] %v", messageType, client.Username, message)
-		}
+	if action != "" {
+		switch action {
 
-		for _, c := range clients {
-			// write the message to the client
-			if (thisClientOnly && c.Username == client.Username) || (!thisClientOnly && c.Username != "") {
-				if messageType == "message" && client.Room != c.Room || c.IsIgnoring(client.Username) {
-					continue
-				}
-				fmt.Fprintln(c.Connection, payload)
+		// command to post message on chat server
+		case "message":
+			client.SendMessage("message", body, false)
+
+			// command to login into server by providing username
+		case "register":
+			if client.Exists(body) {
+				client.SendMessage("warn", "**username already taken**\nLogin name?", true)
+			} else {
+				client.Username = body
+				client.SendMessage("connect", "", false)
 			}
-		}
-	}
-}
 
-// SendPM sends a private message to the receiver client.
-func (client *Client) SendPM(rec string, msg string) {
-	for _, cl := range clients {
-		if cl.Username == rec {
-			fmt.Fprintln(cl.Connection, msg)
-			break
-		}
-	}
-}
+		// command to logout of the chat server
+		case "quit":
+			if client.Room != "lobby" {
+				Store[client.Room].RemoveClient(client)
+			}
+			client.Close(false)
 
-// Exists check whether the username is already occupied by some client.
-func (client *Client) Exists(c string) bool {
-	for _, cl := range clients {
-		if c == cl.Username {
-			return true
-		}
-	}
-	return false
-}
+		// command to add the given username to client's ignoring list
+		case "ignore":
+			client.Ignore(body)
+			client.SendMessage("ignoring", body, false)
 
-// Delete deletes the client entry from stored clients.
-func (client *Client) Delete() {
-	for i, c := range clients {
-		if c.Username == client.Username {
-			clients = append(clients[:i], clients[i+1:]...)
-			break
+		// command to enter the given chat room
+		case "enter":
+			if body != "" {
+				if client.Room != "lobby" {
+					Store[client.Room].RemoveClient(client)
+				}
+				client.Room = body
+				if _, ok := Store[client.Room]; !ok {
+					Store[client.Room] = &Room{Clients: []string{client.Username}}
+				} else {
+					Store[client.Room].Clients = append(Store[client.Room].Clients, client.Username)
+				}
+				client.SendMessage("enter", body, false)
+			} else {
+				client.SendMessage("enter", "invlid room name", true)
+			}
+
+		// command to leave the given chat room
+		case "leave":
+			if client.Room != "lobby" {
+				client.SendMessage("leave", client.Room, false)
+				Store[client.Room].RemoveClient(client)
+				client.Room = "lobby"
+			} else {
+				client.SendMessage("leave", "already in lobby", true)
+			}
+
+		case "rooms":
+			payload = "Active Rooms:"
+			for r, room := range Store {
+				if len(room.Clients) > 0 {
+					payload += fmt.Sprintf("\n%v(%v)", r, len(room.Clients))
+				}
+			}
+			client.SendMessage("rooms", payload, true)
+
+		case "pm":
+			rec, msg := util.ParseMsg("/" + body)
+			payload = fmt.Sprintf("**pm** [%v] %v", client.Username, msg)
+			client.SendPM(rec, payload)
+
+		case "users":
+			if body == "" {
+				if client.Room == "lobby" {
+					payload = "**users in lobby**"
+				} else {
+					payload = fmt.Sprintf("**users in [%v] room**", client.Room)
+				}
+				for _, cl := range ListClients() {
+					if cl.Room == client.Room {
+						payload += fmt.Sprintf("\n%v", cl.Username)
+					}
+				}
+				client.SendMessage("users", payload, true)
+			} else {
+				if _, ok := Store[body]; ok {
+					payload = fmt.Sprintf("**users in [%v] room**", body)
+					for _, cl := range Store[body].Clients {
+						payload += fmt.Sprintf("\n%v", cl)
+					}
+					client.SendMessage("users", payload, true)
+				} else {
+					client.SendMessage("users", "**no such room**", true)
+				}
+			}
+		case "help":
+			body = "**Engineer Chat**\n" +
+				"Synopsis: /<command> <body>\n" +
+				"List of Commands:\n" +
+				"/register <username> : registers the user with the given username\n" +
+				"/quit : logout\n" +
+				"/message <message> : (or simply type your <message>) broadcast the message in the room\n" +
+				"/pm <username> <message>: messages privately to the given user\n" +
+				"/ignore <username> : ignores the user\n" +
+				"/enter <room> : enters the given room\n" +
+				"/leave : leave the room and come back in the lobby\n" +
+				"/rooms : lists the available rooms\n" +
+				"/users <room> : lists the users in the given room"
+			client.SendMessage("help", body, true)
+
+		default:
+			client.SendMessage("unrecognized", action, true)
 		}
 	}
 }
@@ -128,9 +148,4 @@ func (room *Room) RemoveClient(client *Client) {
 		}
 	}
 	room.Clients = clientsInRoom
-}
-
-// ListClients list all the clients in the hub.
-func ListClients() []*Client {
-	return clients
 }
