@@ -42,7 +42,7 @@ func main() {
 		go waitForInput(channel, &client)
 		go handleInput(channel, &client)
 
-		client.SendMessage("login", "Welcome to the Engineer Chat Server! \nLogin Name?", true)
+		client.SendMessage("login", "Welcome to the Engineer Chat Server!\nType /help to list the commands\nLogin Name?", true)
 	}
 
 }
@@ -102,7 +102,9 @@ func handleInput(in <-chan string, client *hub.Client) {
 
 				// command to logout of the chat server
 				case "quit":
-					hubStore[client.Room].RemoveClient(client)
+					if client.Room != "lobby" {
+						hubStore[client.Room].RemoveClient(client)
+					}
 					client.Close(false)
 
 				// command to add the given username to client's ignoring list
@@ -145,6 +147,21 @@ func handleInput(in <-chan string, client *hub.Client) {
 					fmt.Println(rec, msg)
 					payload := fmt.Sprintf("**pm** [%v] %v", client.Username, msg)
 					client.SendPM(rec, payload)
+
+				case "help":
+					body = "**Engineer Chat**\n" +
+						"Synopsis: /<command> <body>\n" +
+						"List of Commands:\n" +
+						"/register <username> : registers with the given username\n" +
+						"/message <message> : (or simply type your <message>) broadcast the message in the room\n" +
+						"/quit : logout\n" +
+						"/ignore <username> : ignores the user\n" +
+						"/enter <room> : enters the given room\n" +
+						"/leave : leave the room and come back in the lobby\n" +
+						"/rooms : lists the available rooms\n" +
+						"/pm <username> <message>: messages privately to the given user"
+					client.SendMessage("help", body, true)
+
 				default:
 					client.SendMessage("unrecognized", action, true)
 				}
