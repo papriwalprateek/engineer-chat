@@ -27,7 +27,7 @@ A simple chat server where clients(or rather engineers!) can easily chat through
   $ docker run -d papriwalprateek/engineer-chat
   ```
 
-## Chat Clients
+## Chat clients
 You can use either [telnet](http://linux.die.net/man/1/telnet) or [nc](http://linux.die.net/man/1/nc) to connect to the chat server.
 ```
 $ telnet 127.0.0.1 5555
