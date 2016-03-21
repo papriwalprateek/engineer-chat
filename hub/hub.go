@@ -129,3 +129,8 @@ func (room *Room) RemoveClient(client *Client) {
 	}
 	room.Clients = clientsInRoom
 }
+
+// ListClients list all the clients in the hub.
+func ListClients() []*Client {
+	return clients
+}

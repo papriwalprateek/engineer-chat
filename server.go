@@ -73,6 +73,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 			message = strings.TrimSpace(message)
 			var action string
 			var body string
+			var payload string
 			if message[0] == '/' {
 				action, body = util.ParseMsg(message)
 			} else {
@@ -125,6 +126,8 @@ func handleInput(in <-chan string, client *hub.Client) {
 							hubStore[client.Room].Clients = append(hubStore[client.Room].Clients, client.Username)
 						}
 						client.SendMessage("enter", body, false)
+					} else {
+						client.SendMessage("enter", "invlid room name", true)
 					}
 
 				// command to leave the given chat room
@@ -133,33 +136,62 @@ func handleInput(in <-chan string, client *hub.Client) {
 						client.SendMessage("leave", client.Room, false)
 						hubStore[client.Room].RemoveClient(client)
 						client.Room = "lobby"
+					} else {
+						client.SendMessage("leave", "already in lobby", true)
 					}
 
 				case "rooms":
-					body = "Available Rooms:"
+					payload = "Active Rooms:"
 					for r, room := range hubStore {
-						body += fmt.Sprintf("\n%v(%v)", r, len(room.Clients))
+						if len(room.Clients) > 0 {
+							payload += fmt.Sprintf("\n%v(%v)", r, len(room.Clients))
+						}
 					}
-					client.SendMessage("rooms", body, true)
+					client.SendMessage("rooms", payload, true)
 
 				case "pm":
 					rec, msg := util.ParseMsg("/" + body)
 					fmt.Println(rec, msg)
-					payload := fmt.Sprintf("**pm** [%v] %v", client.Username, msg)
+					payload = fmt.Sprintf("**pm** [%v] %v", client.Username, msg)
 					client.SendPM(rec, payload)
 
+				case "users":
+					if body == "" {
+						if client.Room == "lobby" {
+							payload = "**users in lobby**"
+						} else {
+							payload = fmt.Sprintf("**users in [%v] room**", client.Room)
+						}
+						for _, cl := range hub.ListClients() {
+							if cl.Room == client.Room {
+								payload += fmt.Sprintf("\n%v", cl.Username)
+							}
+						}
+						client.SendMessage("users", payload, true)
+					} else {
+						if _, ok := hubStore[body]; ok {
+							payload = fmt.Sprintf("**users in [%v] room**", body)
+							for _, cl := range hubStore[body].Clients {
+								payload += fmt.Sprintf("\n%v", cl)
+							}
+							client.SendMessage("users", payload, true)
+						} else {
+							client.SendMessage("users", "**no such room**", true)
+						}
+					}
 				case "help":
 					body = "**Engineer Chat**\n" +
 						"Synopsis: /<command> <body>\n" +
 						"List of Commands:\n" +
 						"/register <username> : registers with the given username\n" +
-						"/message <message> : (or simply type your <message>) broadcast the message in the room\n" +
 						"/quit : logout\n" +
+						"/message <message> : (or simply type your <message>) broadcast the message in the room\n" +
+						"/pm <username> <message>: messages privately to the given user" +
 						"/ignore <username> : ignores the user\n" +
 						"/enter <room> : enters the given room\n" +
 						"/leave : leave the room and come back in the lobby\n" +
 						"/rooms : lists the available rooms\n" +
-						"/pm <username> <message>: messages privately to the given user"
+						"/users <room> : lists the users in the given room"
 					client.SendMessage("help", body, true)
 
 				default:
