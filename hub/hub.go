@@ -35,10 +35,10 @@ func (client *Client) Close(doSendMessage bool) {
 		client.SendMessage("disconnect", "", false)
 	}
 	client.Connection.Close()
-	clients = removeEntry(client, clients)
+	client.Delete()
 }
 
-// Register the connection and cache it
+// Register stores the client details.
 func (client *Client) Register() {
 	clients = append(clients, client)
 }
@@ -58,7 +58,7 @@ func (client *Client) IsIgnoring(username string) bool {
 	return false
 }
 
-// SendMessage sends message to all clients
+// SendMessage sends message to all clients depending on the messageType.
 func (client *Client) SendMessage(messageType string, message string, thisClientOnly bool) {
 	var payload string
 
@@ -108,25 +108,14 @@ func (client *Client) Exists(c string) bool {
 	return false
 }
 
-// remove client entry from stored clients
-func removeEntry(client *Client, arr []*Client) []*Client {
-	rtn := arr
-	index := -1
-	for i, value := range arr {
-		if value == client {
-			index = i
+// Delete deletes the client entry from stored clients.
+func (client *Client) Delete() {
+	for i, c := range clients {
+		if c.Username == client.Username {
+			clients = append(clients[:i], clients[i+1:]...)
 			break
 		}
 	}
-
-	if index >= 0 {
-		// we have a match, create a new array without the match
-		rtn = make([]*Client, len(arr)-1)
-		copy(rtn, arr[:index])
-		copy(rtn[index:], arr[index+1:])
-	}
-
-	return rtn
 }
 
 // RemoveClient removes client from the room.

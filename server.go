@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/papriwalprateek/engineer-chat/hub"
+	"github.com/papriwalprateek/engineer-chat/util"
 )
 
 // hubStore is an in-memory storage for the running server.
@@ -74,11 +74,11 @@ func handleInput(in <-chan string, client *hub.Client) {
 			var action string
 			var body string
 			if message[0] == '/' {
-				action, body = parse(message)
+				action, body = util.ParseMsg(message)
 			} else {
 				body = message
 				if client.Username == "" {
-					action = "login"
+					action = "register"
 				} else {
 					action = "message"
 				}
@@ -92,7 +92,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 					client.SendMessage("message", body, false)
 
 					// command to login into server by providing username
-				case "login":
+				case "register":
 					if client.Exists(body) {
 						client.SendMessage("warn", "**username already taken**\nLogin name?", true)
 					} else {
@@ -141,7 +141,7 @@ func handleInput(in <-chan string, client *hub.Client) {
 					client.SendMessage("rooms", body, true)
 
 				case "pm":
-					rec, msg := parse("/" + body)
+					rec, msg := util.ParseMsg("/" + body)
 					fmt.Println(rec, msg)
 					payload := fmt.Sprintf("**pm** [%v] %v", client.Username, msg)
 					client.SendPM(rec, payload)
@@ -151,14 +151,4 @@ func handleInput(in <-chan string, client *hub.Client) {
 			}
 		}
 	}
-}
-
-// parse out message contents (/{action} {message})
-func parse(message string) (string, string) {
-	actionRegex, _ := regexp.Compile(`^\/([^\s]*)\s*(.*)$`)
-	res := actionRegex.FindAllStringSubmatch(message, -1)
-	if len(res) == 1 {
-		return res[0][1], res[0][2]
-	}
-	return "", ""
 }
