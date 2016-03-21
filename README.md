@@ -48,3 +48,51 @@ You can send commands or messages on this tcp stream. Commands begin with `/` an
 |List Rooms     |`/rooms`            |Lists the available rooms.
 |List Users     |`/users <rooms`     |Lists the users in the given room. A simple `/users` will return the users present in the current room.
 |Help           |`help`              |Lists the available commands.
+
+#### Sample Chat Session
+A sample chat session with 3 clients - `prateek`, `parijat`, `prateekp`
+
+```
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+Welcome to the Engineer Chat Server!
+Type /help to list the commands
+Login Name?
+prateek
+**username already taken**
+Login name?
+prateekp
+**connect** [prateekp] 
+/users
+**users in lobby**
+prateek
+parijat
+prateekp
+/pm parijat lets get into college room
+**pm** [parijat] ok
+**enter** [parijat] college
+/users college
+**users in [college] room**
+parijat
+/enter college
+**enter** [prateekp] college
+prateek cant here us because we are in **college** room
+[prateekp] prateek cant here us because we are in **college** room
+[parijat] yeah thats cool
+/leave
+**leave** [prateekp] college
+/users college 
+**users in [college] room**
+parijat
+/users
+**users in lobby**
+prateek
+prateekp
+**disconnect** [prateek] 
+/users
+**users in lobby**
+prateekp
+/quit
+Connection closed by foreign host.
+```
