@@ -2,7 +2,7 @@
 
 # engineer-chat
 
-A simple chat server where clients(or rather engineers!) can easily chat through their terminal.
+A simple chat server where clients(or rather engineers!) can easily chat through terminal.
 
 ## Chat server
 
@@ -24,7 +24,7 @@ A simple chat server where clients(or rather engineers!) can easily chat through
   ```
   This will start the server at `localhost:6060`.
 
-  Alternatively, you can pull the latest image from docker hub and run it directly.
+  Alternatively, you can pull the latest image from [docker hub](https://hub.docker.com/r/papriwalprateek/engineer-chat/) and run it directly.
   ```
   $ docker run -d papriwalprateek/engineer-chat
   ```
@@ -73,19 +73,19 @@ parijat
 prateekp
 /pm parijat lets get into college room
 **pm** [parijat] ok
-**enter** [parijat] college
-/users college
-**users in [college] room**
+**enter** [parijat] iit-delhi
+/users iit-delhi
+**users in [iit-delhi] room**
 parijat
-/enter college
-**enter** [prateekp] college
-prateek cant here us because we are in **college** room
-[prateekp] prateek cant here us because we are in **college** room
-[parijat] yeah thats cool
+/enter iit-delhi
+**enter** [prateekp] iit-delhi
+prateek cant here us because we are in iit-delhi room and he is in lobby. lol!
+[prateekp] prateek cant here us because we are in iit-delhi room and he is in lobby. lol!
+[parijat] yeah lol!
 /leave
-**leave** [prateekp] college
-/users college 
-**users in [college] room**
+**leave** [prateekp] iit-delhi
+/users iit-delhi
+**users in [iit-delhi] room**
 parijat
 /users
 **users in lobby**
