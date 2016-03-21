@@ -13,7 +13,7 @@ A simple chat server where clients(or rather engineers!) can easily chat through
   ```
   $ go run server.go
   ```
-  The server starting running at `localhost:5555`.
+  The server starts running at `localhost:5555`.
 
   Note: If you have [docker](https://www.docker.com/) installed on your machine, you can build the image and run the server inside the container.
   ```
@@ -36,12 +36,15 @@ $ telnet 127.0.0.1 5555
 You can send commands or messages on this tcp stream. Commands begin with `/` and messages are anything else.
 
 **List of Available Commands**
-/register <username> : registers with the given username
-/quit : logout
-/message <message> : (or simply type your <message>) broadcast the message in the room
-/pm <username> <message>: messages privately to the given user/ignore <username> : ignores the user
-/enter <room> : enters the given room
-/leave : leave the room and come back in the lobby
-/rooms : lists the available rooms
-/users <room> : lists the users in the given room
-/help : list the available commands
+
+|Name           |Command               |Description
+|---------------|----------------------|------------------------------------------- 
+|Register       |`/register <username>`|registers the user with the given username.
+|Logout         |`/quit`               |logout from the chat server.
+|Message        |`/message <message>`  |Broadcast the message in the room. Also without `/`, automatically `/message` command is used.
+|Private Message|`/pm <user> <message>`|messages privately to the given user.
+|Join Room      |`/enter <room>`      |Joins the given room. If room is not there, it creates the room and then joins it.
+|Leave Room     |`/leave`            |Leaves the current room and comes back into the lobby.
+|List Rooms     |`/rooms`            |Lists the available rooms.
+|List Users     |`/users <rooms`     |Lists the users in the given room. A simple `/users` will return the users present in the current room.
+|Help           |`help`              |Lists the available commands.
