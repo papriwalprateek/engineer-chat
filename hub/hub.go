@@ -79,20 +79,29 @@ func ExecCommand(action string, body string, client *Client) {
 				client.SendMessage("leave", "already in lobby", true)
 			}
 
+		// command to list the active rooms
 		case "rooms":
+			flag := false
 			payload = "Active Rooms:"
 			for r, room := range Store {
 				if len(room.Clients) > 0 {
+					flag = true
 					payload += fmt.Sprintf("\n%v(%v)", r, len(room.Clients))
 				}
 			}
-			client.SendMessage("rooms", payload, true)
+			if flag {
+				client.SendMessage("rooms", payload, true)
+			} else {
+				client.SendMessage("rooms", "**no active room**", true)
+			}
 
+		// command to send private message to a user
 		case "pm":
 			rec, msg := util.ParseMsg("/" + body)
 			payload = fmt.Sprintf("**pm** [%v] %v", client.Username, msg)
 			client.SendPM(rec, payload)
 
+		// command to list the users in the given room
 		case "users":
 			if body == "" {
 				if client.Room == "lobby" {
@@ -117,6 +126,8 @@ func ExecCommand(action string, body string, client *Client) {
 					client.SendMessage("users", "**no such room**", true)
 				}
 			}
+
+		// command to list the available commands
 		case "help":
 			body = "**Engineer Chat**\n" +
 				"Synopsis: /<command> <body>\n" +

@@ -16,7 +16,7 @@ type Client struct {
 // in-memory storage
 var clients []*Client
 
-// Close the client connection and clenup
+// Close the client connection and cleanup
 func (client *Client) Close(doSendMessage bool) {
 	if doSendMessage {
 		// if we send the close command, the connection will terminate causing another close
@@ -37,7 +37,7 @@ func (client *Client) Ignore(user string) {
 	client.ignoring = append(client.ignoring, user)
 }
 
-// IsIgnoring returns whether the given user is in the client's ignoring list.
+// IsIgnoring returns whether the client is ignoring the given user.
 func (client *Client) IsIgnoring(username string) bool {
 	for _, value := range client.ignoring {
 		if value == username {
@@ -47,7 +47,7 @@ func (client *Client) IsIgnoring(username string) bool {
 	return false
 }
 
-// SendMessage sends message to all clients depending on the messageType.
+// SendMessage sends message to the clients.
 func (client *Client) SendMessage(messageType string, message string, thisClientOnly bool) {
 	var payload string
 

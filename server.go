@@ -20,7 +20,7 @@ func main() {
 	}
 	fmt.Printf("Chat server started on port %v...\n", settings.Port)
 
-	// initialize hubStore
+	// initialize hub Store
 	hub.Store = make(map[string]*hub.Room)
 
 	for {
@@ -60,8 +60,6 @@ func waitForInput(out chan string, client *hub.Client) {
 }
 
 // listen for channel updates for a client and handle the message
-// messages must be in the format of /{action} {content} where content is optional depending on the action
-// supported actions are "user", "chat", and "quit".  the "user" must be set before any chat messages are allowed
 func handleInput(in <-chan string, client *hub.Client) {
 	for {
 		message := <-in
