@@ -33,7 +33,7 @@ func ExecCommand(action string, body string, client *Client) {
 
 			// command to login into server by providing username
 		case "register":
-			if client.Exists(body) && client.Username != "anon" {
+			if client.Exists(body) {
 				client.SendMessageToClientOnly("register", "**username already taken**\nLogin name?")
 			} else {
 				client.Username = body
